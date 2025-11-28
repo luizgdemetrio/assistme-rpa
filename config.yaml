@@ -2,10 +2,10 @@ base_url: "https://account.grupoassistme.com.br"
 seletores:
   btn_financeiro: 'role=button[name="Financeiro"]'
   link_custo_puro: 'role=link[name="Custo Puro"]'
-  grid_linhas: 'css=div[role="row"]'
+  grid_linhas: '//*[@id="Dados"]/div/div/div[1]/div'
   grid_cabecalho: 'css=div[role="row"] >> nth=0'
-  menu_mais: 'css=button[aria-label="Mais"], css=button:has-text("Mais"), css=[data-testid="more"]'
-  acao_visualizar: 'text=Visualizar'
+  menu_mais: css=button:has(i.fas.fa-ellipsis-v)
+  acao_visualizar: 'page.get_by_role("button", name="VISUALIZAR")'
   # Ajustáveis depois que vermos o DOM real:
-  filtro_busca: 'css=input[placeholder*="Buscar"], css=input[type="search"]'
+  filtro_busca: 'input[placeholder*="Pesquise aqui"]'
 downloads_root: "./data"
