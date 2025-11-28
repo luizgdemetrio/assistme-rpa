@@ -10,4 +10,5 @@ dependencies = [
     "typer",
     "playwright",
     "python-dotenv",
+    "requests>=2.32.5",
 ]

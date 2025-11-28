@@ -70,4 +70,3 @@ def abrir_visualizar_do_protocolo(page: Page, protocolo: str, sel: dict):
         raise RuntimeError("Seletor para ação de Visualizar não definido.")
     page.wait_for_selector("text=VISUALIZAR", timeout=5000)
     page.get_by_role("button", name="VISUALIZAR").click()
-    sleep(360)

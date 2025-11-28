@@ -51,41 +51,55 @@ def baixar_pdf_via_iframe(url_pdf: str, destino: str):
         f.write(resposta.content)
 
 
+def fechar_nf(page: Page):
+    # Fecha o modal via JS para ignorar interceptações de pointer-events
+    modal_fechar = page.locator('div[role="dialog"] button:has-text("Fechar")')
+
+    if modal_fechar.count() > 0:
+        botao = modal_fechar.first
+        try:
+            # força clique mesmo se o overlay estiver na frente
+            botao.evaluate("(el) => el.click()")
+        except:
+            # fallback: tenta clicar tradicionalmente
+            botao.click(force=True)
+
+    # espera o modal desaparecer
+    page.wait_for_timeout(400)
+
+
 def baixar_nota_fiscal(page: Page, nota: dict, pasta_destino: str):
-    """
-    Clica no olho, pega o PDF dentro do iframe e salva com nome correto.
-    """
     prestador = nota["prestador"]
     numero = nota["numero"]
     valor = nota["valor"]
 
     print(f"⬇️ Baixando NF {numero} - {prestador}...")
 
-    # Abre popup clicando no olho
+    # Abre popup da NF
     nota["eye"].click()
 
-    # Aguarda iframe aparecer
+    # Aguarda iframe da NF
     iframe = page.locator("iframe.frame")
-    iframe.wait_for(state="visible", timeout=5000)
+    iframe.wait_for(state="visible")
 
-    # Captura a URL do PDF
+    # URL do PDF
     url_pdf = iframe.get_attribute("src")
-
     if not url_pdf:
         raise RuntimeError("Não foi possível capturar o src do iframe da NF.")
 
-    # Define nome final
+    # Nome final
     nome_final = f"{prestador} - NF {numero} - {valor}.pdf".replace("/", "-")
     destino = os.path.join(pasta_destino, nome_final)
 
-    # Baixa PDF via HTTP direto
+    # Baixa PDF
     baixar_pdf_via_iframe(url_pdf, destino)
-
     print(f"✅ NF salva como: {nome_final}")
 
-    # Fecha o popup — o botão geralmente é o X ou “Fechar”
-    page.get_by_role("button", name="Fechar").click(timeout=3000)
-    sleep(0.5)
+    # FECHAR popup da NF
+    fechar_nf(page)
+
+    # Pequeno delay para evitar conflito no próximo click
+    page.wait_for_timeout(300)
 
 
 def processar_downloads(page: Page, protocolo: str):
@@ -102,7 +116,19 @@ def processar_downloads(page: Page, protocolo: str):
     notas = extrair_lista_notas(page)
     print(f"Encontradas {len(notas)} notas.")
 
-    for nota in notas:
+    for i, nota in enumerate(notas):
+
+        if i > 0:
+            print("🔄 Reabrindo VISUALIZAR...")
+
+            page.wait_for_load_state("domcontentloaded")
+            page.wait_for_selector("text=VISUALIZAR")
+            page.get_by_role("button", name="VISUALIZAR").click()
+
+            # espera abrir o container
+            page.wait_for_load_state("domcontentloaded")
+            page.wait_for_timeout(800)
+
         baixar_nota_fiscal(page, nota, pasta_destino)
 
     print("🏁 Finalizado: todas as NFs foram baixadas com sucesso!")

@@ -6,7 +6,7 @@ import typer
 from src.browser import get_playwright_context
 from src.flows.login_flow import do_login
 from src.flows.service_flow import selecionar_servico_assistencia
-from src.flows.download_nf_flow import baixar_documentos
+from src.flows.download_nf_flow import processar_downloads
 
 app = typer.Typer(help="CLI do Assist Me RPA")
 
@@ -80,23 +80,17 @@ def run_cmd(
 
     try:
         page = context.new_page()
-
-        # LOGIN
         do_login(page, base_url=base)
-
-        # SELECIONAR SERVIÇO
         selecionar_servico_assistencia(page)
-
-        # IR PARA CUSTO PURO
         ir_para_custo_puro(page, sel)
-
-        # ABRIR O POP-UP DO PROTOCOLO
         abrir_visualizar_do_protocolo(page, protocolo, sel)
 
-        # BAIXAR NOTAS / PDF
-        baixar_documentos(page, protocolo)
+        typer.echo(f"🔍 Visualizar aberto para {protocolo}. Iniciando downloads...")
 
-        typer.echo(f"✅ Finalizado para {protocolo}.")
+        # ⬇️ AQUI! baixar NFs ANTES de fechar contexto
+        processar_downloads(page, protocolo)
+
+        typer.echo("🏁 Processo finalizado com sucesso.")
 
     finally:
         context.close()
