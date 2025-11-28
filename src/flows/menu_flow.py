@@ -3,16 +3,14 @@ from playwright.sync_api import Page
 
 
 def ir_para_custo_puro(page: Page, sel: dict):
-    # Abre Financeiro
-    if sel.get("btn_financeiro", "").startswith("role="):
-        page.get_by_role("button", name="Financeiro", exact=False).click()
-    else:
-        page.locator(sel["btn_financeiro"]).click()
+    print("🧭 Indo direto para Custo Puro pela URL...")
 
-    # Clica Custo Puro
-    if sel.get("link_custo_puro", "").startswith("role="):
-        page.get_by_role("link", name="Custo Puro", exact=False).click()
-    else:
-        page.locator(sel["link_custo_puro"]).click()
+    custo_puro_url = "https://cliente.grupoassistme.com.br/CustoPuro"
 
-    page.wait_for_load_state("networkidle")
+    # Navega até a página
+    page.goto(custo_puro_url, wait_until="domcontentloaded")
+
+    # Aguarda o grid REAL (tabela do Quasar)
+    page.wait_for_selector("table.q-table tbody tr", timeout=20000)
+
+    print("✅ Página de Custo Puro aberta com sucesso.")
