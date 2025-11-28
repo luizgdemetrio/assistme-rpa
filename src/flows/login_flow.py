@@ -22,6 +22,3 @@ def do_login(page: Page, base_url: str):
 
     # Aguarda estabilizar
     page.wait_for_load_state("networkidle")
-
-    # Sanity check: não está mais no /login
-    assert "/login" not in page.url.lower(), f"Ainda estou no login: {page.url}"

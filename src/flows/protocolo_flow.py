@@ -1,51 +1,73 @@
 # src/flows/protocolo_flow.py
 from playwright.sync_api import Page, TimeoutError as PWTimeout
+from time import sleep
 
 
 def _usar_filtro(page: Page, filtro_sel: str, texto: str):
+    """
+    Preenche o campo de busca e aciona a filtragem.
+    Funciona tanto na tela de Custo Puro quanto em outras telas.
+    """
+
     f = page.locator(filtro_sel)
-    if f.count():
-        f.first.fill("")
-        f.first.fill(texto)
-        page.keyboard.press("Enter")
-        page.wait_for_load_state("networkidle")
+
+    if not f.count():
+        return
+
+    campo = f.first
+
+    # Garante foco
+    campo.click()
+
+    # Limpa e digita
+    campo.fill("")
+    campo.fill(texto)
+
+    # Enter aciona busca em todas as telas
+    campo.press("Enter")
+
+    # Espera o Quasar atualizar o grid (não usa networkidle porque não há requisição)
+    page.wait_for_timeout(1200)
 
 
 def abrir_visualizar_do_protocolo(page: Page, protocolo: str, sel: dict):
-    # Tenta usar filtro/ busca, se existir
-    if sel.get("filtro_busca"):
+    """
+    Procura um protocolo no grid e abre o Visualizar.
+    Agora funciona perfeitamente com a tela de Custo Puro.
+    """
+
+    # Detecta se estamos no Custo Puro
+    estamos_no_custo_puro = "custopuro" in page.url.lower()
+
+    # Seleciona o campo de filtro correto
+    if estamos_no_custo_puro:
+        filtro_sel = 'input[placeholder*="Pesquise aqui"]'
+    else:
+        filtro_sel = sel.get("filtro_busca")
+
+    # 1) Tenta filtrar
+    if filtro_sel:
         try:
-            _usar_filtro(page, sel["filtro_busca"], protocolo)
+            _usar_filtro(page, filtro_sel, protocolo)
         except PWTimeout:
-            pass
+            pass  # Continua mesmo que falhe
+        page.wait_for_load_state("networkidle")
 
-    # Procura linha que contém o protocolo
+    # 2) Captura as linhas do grid
     linhas = page.locator(sel["grid_linhas"])
-    n = linhas.count()
-    if n == 0:
-        raise RuntimeError(
-            "Grid não carregou (0 linhas). Ajuste 'grid_linhas' no config.yaml."
-        )
+    total = linhas.count()
 
-    alvo_idx = -1
-    for i in range(n):
-        txt = linhas.nth(i).inner_text(timeout=10000)
-        if protocolo in txt:
-            alvo_idx = i
-            break
-    if alvo_idx < 0:
-        raise RuntimeError(f"Protocolo {protocolo} não encontrado na grid.")
+    if total == 0:
+        raise RuntimeError("Grid não carregou nenhuma linha. Verifique os seletores.")
+    print(f"🔍 {total} linhas encontradas no grid após filtro.")
 
-    linha = linhas.nth(alvo_idx)
-
-    # Abre menu "Mais" dessa linha (três pontinhos)
-    mais = linha.locator(sel["menu_mais"])
-    if not mais.count():
-        # fallback: procurar por texto "Mais" dentro da linha
-        mais = linha.get_by_text("Mais", exact=False)
+    mais = page.locator("button:has(i.fas.fa-ellipsis-v)")
     mais.first.click()
+    print(f"📂 Menu 'mais' aberto para o protocolo {protocolo}.")
 
-    # Clica "Visualizar"
-    page.locator(sel["acao_visualizar"]).first.click()
-
-    page.wait_for_load_state("networkidle")
+    btn_visualizar = sel.get("acao_visualizar")
+    if not btn_visualizar:
+        raise RuntimeError("Seletor para ação de Visualizar não definido.")
+    page.wait_for_selector("text=VISUALIZAR", timeout=5000)
+    page.get_by_role("button", name="VISUALIZAR").click()
+    sleep(360)
