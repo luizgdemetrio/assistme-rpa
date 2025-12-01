@@ -52,6 +52,10 @@ def baixar_pdf_via_iframe(url_pdf: str, destino: str):
 
 
 def fechar_nf(page: Page):
+    """
+    Fecha o modal da nota fiscal utilizando JavaScript ou clique forçado.
+    Aguarda o desaparecimento do modal após a ação.
+    """
     # Fecha o modal via JS para ignorar interceptações de pointer-events
     modal_fechar = page.locator('div[role="dialog"] button:has-text("Fechar")')
 
@@ -60,7 +64,7 @@ def fechar_nf(page: Page):
         try:
             # força clique mesmo se o overlay estiver na frente
             botao.evaluate("(el) => el.click()")
-        except:
+        except Exception:
             # fallback: tenta clicar tradicionalmente
             botao.click(force=True)
 
