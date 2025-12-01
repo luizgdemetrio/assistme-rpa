@@ -7,7 +7,7 @@ def selecionar_servico_assistencia(page: Page):
     Seleciona o serviço 'Assistência' após o login.
     """
     # Garante que a tela de serviços carregou
-    expect(page.get_by_text("Selecione um Serviço")).to_be_visible(timeout=30000)
+    expect(page.get_by_text("Selecione um Serviço")).to_be_visible(timeout=60000)
 
     # Clica no card 'Assistência'
     # Opção 1: pelo texto visível

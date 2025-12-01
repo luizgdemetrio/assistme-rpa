@@ -11,6 +11,6 @@ def ir_para_custo_puro(page: Page, sel: dict):
     page.goto(custo_puro_url, wait_until="domcontentloaded")
 
     # Aguarda o grid REAL (tabela do Quasar)
-    page.wait_for_selector("#App > div", timeout=20000)
+    page.wait_for_selector("#App > div", timeout=60000)
 
     print("✅ Página de Custo Puro aberta com sucesso.")

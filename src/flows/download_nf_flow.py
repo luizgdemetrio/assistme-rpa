@@ -105,6 +105,7 @@ def baixar_nota_fiscal(page: Page, nota: dict, pasta_destino: str):
 def processar_downloads(page: Page, protocolo: str):
     """
     Cria a pasta destino e baixa TODAS as notas do popup de Custo Puro.
+    Se já houver arquivos baixados, ignora e baixa somente as faltantes.
     """
 
     pasta_base = r"C:\Users\Luiz Gustavo\NEXCORP SER. TELECOMUNICAÇÕES S.A\Rodolfo Pollmann - Acionamentos PR\ASSISTME"
@@ -112,23 +113,35 @@ def processar_downloads(page: Page, protocolo: str):
 
     os.makedirs(pasta_destino, exist_ok=True)
 
+    # Lista o que já existe
+    arquivos_existentes = set(os.listdir(pasta_destino))
+    print(f"📁 Arquivos existentes: {len(arquivos_existentes)}\n")
+
     print("📄 Lendo lista de notas...")
     notas = extrair_lista_notas(page)
-    print(f"Encontradas {len(notas)} notas.")
+    print(f"Encontradas {len(notas)} notas.\n")
 
     for i, nota in enumerate(notas):
+        # Nome final da NF
+        nome_final = (
+            f"{nota['prestador']} - NF {nota['numero']} - {nota['valor']}.pdf".replace(
+                "/", "-"
+            )
+        )
 
+        if nome_final in arquivos_existentes:
+            print(f"⏭️ Pulando (já existe): {nome_final}")
+            continue  # NÃO baixa de novo
+
+        # Se não é a primeira, reabre a lista de notas
         if i > 0:
-            print("🔄 Reabrindo VISUALIZAR...")
-
-            page.wait_for_load_state("domcontentloaded")
-            page.wait_for_selector("text=VISUALIZAR")
+            print("🔄 Reabrindo container de notas...")
+            page.wait_for_selector("text=VISUALIZAR", timeout=1500)
             page.get_by_role("button", name="VISUALIZAR").click()
-
-            # espera abrir o container
             page.wait_for_load_state("domcontentloaded")
             page.wait_for_timeout(800)
 
+        # Baixa a nota
         baixar_nota_fiscal(page, nota, pasta_destino)
 
-    print("🏁 Finalizado: todas as NFs foram baixadas com sucesso!")
+    print("\n🏁 Finalizado: todas as NFs faltantes foram baixadas!")
